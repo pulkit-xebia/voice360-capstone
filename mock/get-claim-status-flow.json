@@ -1,0 +1,92 @@
+{
+  "flowName": "GetClaimStatus",
+  "description": "Returns a fictional claim only when the claim number belongs to the verified customer ID.",
+  "trigger": "When an agent calls the flow",
+  "inputs": [
+    { "name": "customerId", "type": "string", "required": true },
+    { "name": "claimNumber", "type": "string", "required": true },
+    { "name": "correlationId", "type": "string", "required": true }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "action": "Validate inputs",
+      "detail": "Reject if customerId or correlationId is blank. Reject if claimNumber is blank or malformed. Return errorCode=INVALID_INPUT."
+    },
+    {
+      "step": 2,
+      "action": "Normalize inputs",
+      "detail": "toUpper(trim(claimNumber)), trim(customerId)."
+    },
+    {
+      "step": 3,
+      "action": "List rows from Claims table",
+      "connector": "Excel Online (Business)",
+      "filter": "claim_number eq '<normalizedClaimNumber>' and customer_id eq '<customerId>'",
+      "detail": "Both fields must match. If no row found, go to step 5."
+    },
+    {
+      "step": 4,
+      "action": "Return authorized claim",
+      "output": {
+        "success": true,
+        "authorized": true,
+        "claimNumber": "<row.claim_number>",
+        "claimType": "<row.claim_type>",
+        "status": "<row.status>",
+        "statusExplanation": "<row.status_explanation>",
+        "lastUpdated": "<row.last_updated>",
+        "missingDocuments": "<row.missing_documents>",
+        "nextAction": "<row.next_action>",
+        "expectedUpdateDate": "<row.expected_update_date>",
+        "errorCode": "NONE"
+      }
+    },
+    {
+      "step": 5,
+      "action": "Return not found",
+      "detail": "Use the same shape whether the claim does not exist or belongs to another customer. Never reveal which case applies.",
+      "output": {
+        "success": true,
+        "authorized": false,
+        "claimNumber": "", "claimType": "", "status": "",
+        "statusExplanation": "", "lastUpdated": "", "missingDocuments": "",
+        "nextAction": "", "expectedUpdateDate": "",
+        "errorCode": "NOT_FOUND"
+      }
+    },
+    {
+      "step": 6,
+      "action": "Catch connector error",
+      "detail": "Return success=false, authorized=false, all claim fields blank, errorCode=TEMPORARY_ERROR."
+    }
+  ],
+  "outputs": [
+    { "name": "success", "type": "boolean" },
+    { "name": "authorized", "type": "boolean" },
+    { "name": "claimNumber", "type": "string" },
+    { "name": "claimType", "type": "string" },
+    { "name": "status", "type": "string" },
+    { "name": "statusExplanation", "type": "string" },
+    { "name": "lastUpdated", "type": "string" },
+    { "name": "missingDocuments", "type": "string" },
+    { "name": "nextAction", "type": "string" },
+    { "name": "expectedUpdateDate", "type": "string" },
+    { "name": "errorCode", "type": "string" }
+  ],
+  "testCases": [
+    {
+      "label": "Primary demo — CLM-1042 for CUS-1001",
+      "input": { "customerId": "CUS-1001", "claimNumber": "CLM-1042", "correlationId": "any-uuid" },
+      "expectedOutput": {
+        "authorized": true, "status": "Under review",
+        "missingDocuments": "", "expectedUpdateDate": "2026-08-15", "errorCode": "NONE"
+      }
+    },
+    {
+      "label": "Cross-customer attempt — CUS-1001 requesting CLM-1043",
+      "input": { "customerId": "CUS-1001", "claimNumber": "CLM-1043", "correlationId": "any-uuid" },
+      "expectedOutput": { "authorized": false, "errorCode": "NOT_FOUND" }
+    }
+  ]
+}

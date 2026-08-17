@@ -1,0 +1,34 @@
+{
+  "github.copilot.enable": {
+    "*": true,
+    "markdown": true,
+    "json": true,
+    "python": true
+  },
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": ".github/copilot-instructions.md"
+    },
+    {
+      "text": "All generated code must use fictional Contoso Assurance data only. Never generate real policy numbers, real names, real phone numbers, or real dates of birth."
+    }
+  ],
+  "github.copilot.chat.testGeneration.instructions": [
+    {
+      "file": ".github/copilot-instructions.md"
+    },
+    {
+      "text": "Use POL-1001 / 1990-02-14 / 4821 (Asha Sharma, CUS-1001) as the primary happy-path test record. Every test suite must include at least one cross-customer access test that expects authorized=false."
+    }
+  ],
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "text": "When reviewing, check: (1) no real customer data, (2) all inputs trimmed and normalised before comparison, (3) opaque error codes used — never expose which field failed, (4) confirmed=true checked before any write action, (5) no raw connector errors returned to the agent."
+    }
+  ],
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "Commit messages must follow Conventional Commits: type(scope): short description. Types: feat, fix, docs, test, chore, security. Example: docs(flows): add VerifyCustomer filter expression. Never include policy numbers, DOB values, or phone digits in commit messages."
+    }
+  ]
+}

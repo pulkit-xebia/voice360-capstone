@@ -1,0 +1,97 @@
+{
+  "flowName": "CreateCallbackRequest",
+  "description": "Creates a fictional callback after the verified customer confirms reason, date, time window, and masked phone.",
+  "trigger": "When an agent calls the flow",
+  "inputs": [
+    { "name": "customerId", "type": "string", "required": true },
+    { "name": "claimNumber", "type": "string", "required": false },
+    { "name": "callbackReason", "type": "string", "required": true },
+    { "name": "preferredDate", "type": "string", "required": true, "format": "yyyy-MM-dd" },
+    { "name": "preferredWindow", "type": "string", "required": true, "allowedValues": ["09:00-12:00", "12:00-15:00", "15:00-18:00"] },
+    { "name": "confirmed", "type": "boolean", "required": true },
+    { "name": "correlationId", "type": "string", "required": true }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "action": "Reject if not confirmed",
+      "detail": "If confirmed is false or missing, return success=false, errorCode=POLICY_BLOCK immediately. Do not proceed."
+    },
+    {
+      "step": 2,
+      "action": "Validate inputs",
+      "detail": "customerId not blank, callbackReason 5-250 chars, preferredDate is today through today+14, preferredWindow is one of the three approved values. Return errorCode=INVALID_INPUT on failure."
+    },
+    {
+      "step": 3,
+      "action": "Verify customer ownership",
+      "detail": "Look up customerId in Customers table to confirm it exists and is Active. If claimNumber is supplied, confirm it belongs to customerId in Claims table."
+    },
+    {
+      "step": 4,
+      "action": "Check for duplicate",
+      "connector": "Excel Online (Business)",
+      "filter": "customer_id eq '<customerId>' and claim_number eq '<claimNumber>' and preferred_date eq '<preferredDate>' and preferred_window eq '<preferredWindow>' and status eq 'Open'",
+      "detail": "If a matching open row exists, return that reference with errorCode=DUPLICATE. Do not create a second row."
+    },
+    {
+      "step": 5,
+      "action": "Get masked phone",
+      "detail": "Read registered_phone_last4 from the Customers row. Build maskedPhone as concat('******', last4)."
+    },
+    {
+      "step": 6,
+      "action": "Generate callback reference",
+      "detail": "Format: CB-<YYYYMMDD>-<4-digit sequence>. Use today's date and an incrementing counter or random 4-digit number."
+    },
+    {
+      "step": 7,
+      "action": "Add row to Callbacks table",
+      "connector": "Excel Online (Business)",
+      "row": {
+        "callback_reference": "<generated>",
+        "customer_id": "<customerId>",
+        "claim_number": "<claimNumber or blank>",
+        "callback_reason": "<sanitized callbackReason>",
+        "preferred_date": "<preferredDate>",
+        "preferred_window": "<preferredWindow>",
+        "masked_phone": "<maskedPhone>",
+        "status": "Open",
+        "created_at": "<utcNow()>",
+        "correlation_id": "<correlationId>"
+      }
+    },
+    {
+      "step": 8,
+      "action": "Return success",
+      "output": {
+        "success": true,
+        "callbackReference": "<generated reference>",
+        "message": "The callback request was created for the preferred window.",
+        "errorCode": "NONE"
+      }
+    },
+    {
+      "step": 9,
+      "action": "Catch connector error",
+      "detail": "Return success=false, callbackReference blank, errorCode=TEMPORARY_ERROR."
+    }
+  ],
+  "outputs": [
+    { "name": "success", "type": "boolean" },
+    { "name": "callbackReference", "type": "string" },
+    { "name": "message", "type": "string" },
+    { "name": "errorCode", "type": "string" }
+  ],
+  "testCase": {
+    "input": {
+      "customerId": "CUS-1001", "claimNumber": "CLM-1042",
+      "callbackReason": "Want to discuss assessment timeline",
+      "preferredDate": "2026-08-14", "preferredWindow": "12:00-15:00",
+      "confirmed": true, "correlationId": "any-uuid"
+    },
+    "expectedOutput": {
+      "success": true, "callbackReference": "CB-20260814-1001", "errorCode": "NONE"
+    }
+  }
+}

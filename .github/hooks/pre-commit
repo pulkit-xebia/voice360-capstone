@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Pre-commit hook: blocks commits that may contain PII or credentials.
+# Install: cp .github/hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -euo pipefail
+
+ERRORS=0
+
+# ── Patterns that must never appear in staged files ───────────────────────────
+
+# Real-looking DOBs outside the known fictional set
+KNOWN_FICTIONAL_DOBS="1990-02-14|1985-07-23|1992-11-05|1978-03-18|1965-09-30|1988-12-08"
+
+# Credential-shaped strings
+CREDENTIAL_PATTERNS=(
+  "client_secret"
+  "ClientSecret"
+  "TenantId"
+  "ApplicationId"
+  "connectionString"
+  "SharedAccessKey"
+  "AccountKey"
+  "password\s*="
+  "BEGIN PRIVATE KEY"
+  "BEGIN RSA PRIVATE KEY"
+)
+
+# ── Check staged files ─────────────────────────────────────────────────────────
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [[ -z "$STAGED_FILES" ]]; then
+  exit 0
+fi
+
+# Skip security config files that intentionally list these pattern names
+SCANNABLE=$(echo "$STAGED_FILES" | grep -vE '^(\.gitignore|\.github/hooks/|SECURITY\.md)' || true)
+
+for PATTERN in "${CREDENTIAL_PATTERNS[@]}"; do
+  MATCHES=$(echo "$SCANNABLE" | xargs grep -rlE "$PATTERN" 2>/dev/null || true)
+  if [[ -n "$MATCHES" ]]; then
+    echo "❌ BLOCKED: Possible credential pattern '$PATTERN' found in:"
+    echo "$MATCHES"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+# Block Excel workbooks (synthetic data only — regenerate with create_workbook.py)
+XLSX_FILES=$(echo "$STAGED_FILES" | grep -E '\.xlsx?$' || true)
+if [[ -n "$XLSX_FILES" ]]; then
+  echo "❌ BLOCKED: Excel workbooks must not be committed. Regenerate with: python3 create_workbook.py"
+  echo "$XLSX_FILES"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Block environment files
+ENV_FILES=$(echo "$STAGED_FILES" | grep -E '^\.env(\..+)?$' | grep -v '\.env\.example' || true)
+if [[ -n "$ENV_FILES" ]]; then
+  echo "❌ BLOCKED: .env files must not be committed."
+  echo "$ENV_FILES"
+  ERRORS=$((ERRORS + 1))
+fi
+
+if [[ $ERRORS -gt 0 ]]; then
+  echo ""
+  echo "Pre-commit hook blocked $ERRORS issue(s). Fix them before committing."
+  echo "If a match is a false positive, use: git commit --no-verify (with reviewer approval only)."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed."
+exit 0

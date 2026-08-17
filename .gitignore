@@ -1,0 +1,58 @@
+# Compiled output
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.swp
+*.swo
+
+# ── Security: never commit these ──────────────────────────────────────────────
+
+# Copilot Studio environment exports (contain connection secrets)
+*.zip
+*SolutionPackage*
+*_managed.zip
+*_unmanaged.zip
+
+# Power Platform / Dataverse credentials
+*connection*.json
+*credentials*.json
+*.env
+.env.*
+!.env.example
+
+# Azure / Microsoft secrets
+*ClientSecret*
+*client_secret*
+*TenantId*
+*ApplicationId*
+appsettings.*.json
+local.settings.json
+
+# Any Excel workbook with real data (only synthetic allowed)
+# Voice360DemoData.xlsx is excluded from version control — use the Python script to regenerate it
+data/*.xlsx
+data/*.xls
+
+# Test output and transcripts (may contain PII from live runs)
+transcripts/
+test-output/
+*.transcript.json
+*_actual_results*
+
+# Copilot Studio publish logs
+publish-logs/

@@ -1,0 +1,86 @@
+{
+  "flowName": "VerifyCustomer",
+  "description": "Verifies a fictional demo customer by policy number, date of birth, and registered phone last four digits.",
+  "trigger": "When an agent calls the flow",
+  "inputs": [
+    { "name": "policyNumber", "type": "string", "required": true },
+    { "name": "dateOfBirth", "type": "string", "required": true, "format": "yyyy-MM-dd" },
+    { "name": "phoneLast4", "type": "string", "required": true }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "action": "Generate correlationId",
+      "detail": "Use guid() expression to create a new UUID. Store as variable correlationId."
+    },
+    {
+      "step": 2,
+      "action": "Validate inputs",
+      "detail": "Check policyNumber is not blank, dateOfBirth matches yyyy-MM-dd, phoneLast4 is exactly 4 digits. If any fail, go to step 7 with errorCode=INVALID_INPUT."
+    },
+    {
+      "step": 3,
+      "action": "Normalize inputs",
+      "detail": "toUpper(trim(policyNumber)), trim(dateOfBirth), trim(phoneLast4)."
+    },
+    {
+      "step": 4,
+      "action": "List rows from Customers table",
+      "connector": "Excel Online (Business)",
+      "filter": "policy_number eq '<normalizedPolicyNumber>'",
+      "detail": "Retrieve matching customer row. If no row found, go to step 7 with errorCode=NOT_VERIFIED."
+    },
+    {
+      "step": 5,
+      "action": "Compare verification values",
+      "detail": "Inside the flow, compare dateOfBirth with row date_of_birth, phoneLast4 with row registered_phone_last4, and confirm policy_status is Active. If any mismatch, go to step 7 with errorCode=NOT_VERIFIED."
+    },
+    {
+      "step": 6,
+      "action": "Return success",
+      "output": {
+        "success": true,
+        "verified": true,
+        "customerId": "<row.customer_id>",
+        "customerFirstName": "<row.first_name>",
+        "maskedPhone": "concat('******', phoneLast4)",
+        "correlationId": "<correlationId>",
+        "errorCode": "NONE"
+      }
+    },
+    {
+      "step": 7,
+      "action": "Return failure",
+      "output": {
+        "success": true,
+        "verified": false,
+        "customerId": "",
+        "customerFirstName": "",
+        "maskedPhone": "",
+        "correlationId": "<correlationId>",
+        "errorCode": "NOT_VERIFIED or INVALID_INPUT"
+      }
+    },
+    {
+      "step": 8,
+      "action": "Catch connector error",
+      "detail": "If Excel connector fails, return success=false, errorCode=TEMPORARY_ERROR, all identity fields blank."
+    }
+  ],
+  "outputs": [
+    { "name": "success", "type": "boolean" },
+    { "name": "verified", "type": "boolean" },
+    { "name": "customerId", "type": "string" },
+    { "name": "customerFirstName", "type": "string" },
+    { "name": "maskedPhone", "type": "string" },
+    { "name": "correlationId", "type": "string" },
+    { "name": "errorCode", "type": "string" }
+  ],
+  "testCase": {
+    "input": { "policyNumber": "POL-1001", "dateOfBirth": "1990-02-14", "phoneLast4": "4821" },
+    "expectedOutput": {
+      "success": true, "verified": true, "customerId": "CUS-1001",
+      "customerFirstName": "Asha", "maskedPhone": "******4821", "errorCode": "NONE"
+    }
+  }
+}

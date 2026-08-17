@@ -1,0 +1,7 @@
+customer_id,first_name,last_name,policy_number,date_of_birth,registered_phone_last4,preferred_language,policy_status
+CUS-1001,Asha,Sharma,POL-1001,1990-02-14,4821,en-US,Active
+CUS-1002,Rahul,Mehta,POL-1002,1985-07-23,1198,en-US,Active
+CUS-1003,Neha,Iyer,POL-1003,1992-11-05,7744,en-US,Active
+CUS-1004,Vikram,Rao,POL-1004,1978-03-18,2056,en-US,Active
+CUS-1005,Mira,Patel,POL-1005,1965-09-30,6612,en-US,Active
+CUS-1006,Dev,Kapoor,POL-1006,1988-12-08,9043,en-US,Lapsed

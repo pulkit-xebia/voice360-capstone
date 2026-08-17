@@ -1,0 +1,2 @@
+callback_reference,customer_id,claim_number,callback_reason,preferred_date,preferred_window,masked_phone,status,created_at,correlation_id
+CB-20260814-0999,CUS-1004,CLM-1045,Question about recorded payment timing,2026-08-14,09:00-12:00,******2056,Open,2026-08-13T06:30:00Z,00000000-0000-4000-8000-000000000999

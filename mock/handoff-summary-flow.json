@@ -1,0 +1,78 @@
+{
+  "flowName": "PrepareHandoffSummary",
+  "description": "Produces a structured summary for a human agent using the current conversation context.",
+  "trigger": "When an agent calls the flow",
+  "inputs": [
+    { "name": "customerIntent", "type": "string", "required": true },
+    { "name": "verificationStatus", "type": "string", "required": true, "allowedValues": ["VERIFIED", "FAILED", "NOT_ATTEMPTED"] },
+    { "name": "customerId", "type": "string", "required": false },
+    { "name": "claimNumber", "type": "string", "required": false },
+    { "name": "claimStatus", "type": "string", "required": false },
+    { "name": "actionsTaken", "type": "string", "required": true },
+    { "name": "handoffReason", "type": "string", "required": true },
+    { "name": "unresolvedQuestion", "type": "string", "required": true },
+    { "name": "correlationId", "type": "string", "required": false }
+  ],
+  "priorityMapping": {
+    "NORMAL": ["EXPLICIT_HUMAN_REQUEST", "UNSUPPORTED_REQUEST", "VERIFICATION_FAILED"],
+    "HIGH": ["COMPLAINT", "DISPUTED_DECISION", "VULNERABILITY", "HARDSHIP", "SUSPECTED_FRAUD"],
+    "URGENT": ["IMMEDIATE_DANGER", "URGENT_MEDICAL"]
+  },
+  "steps": [
+    {
+      "step": 1,
+      "action": "Validate required inputs",
+      "detail": "customerIntent, verificationStatus, actionsTaken, handoffReason, unresolvedQuestion must not be blank. Return errorCode=INVALID_INPUT if any are missing."
+    },
+    {
+      "step": 2,
+      "action": "Determine priority",
+      "detail": "Map handoffReason to NORMAL, HIGH, or URGENT using the priority mapping above. Default to NORMAL if unrecognized."
+    },
+    {
+      "step": 3,
+      "action": "Build summary string",
+      "template": "Intent: {customerIntent}\nVerification: {verificationStatus}\nCustomer ID: {customerId or 'Not available'}\nClaim: {claimNumber or 'Not provided'}\nRecorded status: {claimStatus or 'Not retrieved'}\nActions completed: {actionsTaken}\nEscalation reason: {handoffReason}\nUnresolved need: {unresolvedQuestion}\nCorrelation ID: {correlationId or 'Not available'}",
+      "detail": "Truncate to 1000 characters. Never include date of birth, full phone, verification answers, passwords, or raw transcript."
+    },
+    {
+      "step": 4,
+      "action": "Return summary",
+      "output": {
+        "success": true,
+        "handoffSummary": "<built summary>",
+        "priority": "<NORMAL|HIGH|URGENT>",
+        "errorCode": "NONE"
+      }
+    },
+    {
+      "step": 5,
+      "action": "Catch error",
+      "detail": "Return success=false, handoffSummary blank, errorCode=TEMPORARY_ERROR."
+    }
+  ],
+  "outputs": [
+    { "name": "success", "type": "boolean" },
+    { "name": "handoffSummary", "type": "string" },
+    { "name": "priority", "type": "string" },
+    { "name": "errorCode", "type": "string" }
+  ],
+  "testCase": {
+    "input": {
+      "customerIntent": "Check claim status for CLM-1042",
+      "verificationStatus": "VERIFIED",
+      "customerId": "CUS-1001",
+      "claimNumber": "CLM-1042",
+      "claimStatus": "Under review",
+      "actionsTaken": "VerifyCustomer=success; GetClaimStatus=success",
+      "handoffReason": "EXPLICIT_HUMAN_REQUEST",
+      "unresolvedQuestion": "Customer wants to speak to someone about the assessment timeline",
+      "correlationId": "3e83b8de-7bdd-4f75-ae64-9ed12e9da001"
+    },
+    "expectedOutput": {
+      "success": true,
+      "priority": "NORMAL",
+      "errorCode": "NONE"
+    }
+  }
+}
